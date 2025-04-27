@@ -25,6 +25,11 @@ namespace tShockDiscordVerifier
 		//This is a fun line we have to include in ALL plugins
 		public Plugin(Main game) : base(game) { }
 
+		public override string Author => "Stardust9681";
+		public override string Description => "Plugin/Bot combination used to verify users through Discord";
+		public override Version Version => new Version(0, 1);
+		public override string Name => "Discord Verifier";
+
 		public override void Initialize()
 		{
 			Shared.Core.InitAll(this);

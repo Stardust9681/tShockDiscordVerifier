@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
-using SqlKata.Execution;
+//using SqlKata.Execution;
 
 namespace tShockDiscordVerifier.Shared.Verification
 {

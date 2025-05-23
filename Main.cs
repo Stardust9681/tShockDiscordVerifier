@@ -10,7 +10,6 @@ using TerrariaApi.Server;
 
 using Terraria;
 
-using static SqlKata.Execution.QueryExtensions;
 using Discord;
 
 namespace tShockDiscordVerifier

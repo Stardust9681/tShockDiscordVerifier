@@ -47,7 +47,6 @@ namespace tShockDiscordVerifier.Shared
 		#region Database
 		public static bool DatabaseInitialised { get; private set; } = false;
 		public static Database.SQLHandler DBHandler { get; private set; }
-		public static SqlKata.Execution.QueryFactory QueryBuilder => DBHandler.DB;
 
 		internal static void InitDB()
 		{

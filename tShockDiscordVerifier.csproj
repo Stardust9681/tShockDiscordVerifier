@@ -1,17 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
+  
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <Configurations>TShock</Configurations>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TShock" Version="5.2.3" />
+    <PackageReference Include="Discord.Net.Core" Version="3.17.4" />
+    <PackageReference Include="Discord.Net.Rest" Version="3.17.4" />
+    <PackageReference Include="Discord.Net.WebSocket" Version="3.17.4" />
+    <PackageReference Include="TShock" Version="5.2.4" />
   </ItemGroup>
 
+  <!--
   <ItemGroup>
-    <Reference Include="References\*.dll"/>
+    <Reference Include="References\*.dll" />
   </ItemGroup>
+  -->
   
 </Project>

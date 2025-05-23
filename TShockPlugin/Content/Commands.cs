@@ -8,7 +8,7 @@ using TShockAPI;
 using tShockDiscordVerifier.Shared;
 using static tShockDiscordVerifier.Shared.Utilities;
 using tShockDiscordVerifier.DiscordBot;
-using SqlKata.Execution;
+//using SqlKata.Execution;
 using Microsoft.Xna.Framework;
 using Discord.Rest;
 
@@ -43,13 +43,16 @@ namespace tShockDiscordVerifier.TShockPlugin.Content
 				}
 			);
 
+            
 			TShockAPI.Commands.ChatCommands.Add(
 				new Command(Permissions.user, Query, "query")
 				{
-					HelpText = "/query <sqlite statement>",
+					HelpText = "/query <non-query:True|False> <sqlite statement>",
 					HelpDesc = new string[]
 					{
-						"/query <sqlite statement>",
+						"/query <query:True|False> <sqlite statement>",
+                        "Query: True will return the number of entries affected | False spits out query results",
+                        "WILL ONLY RETURN FIRST COLUMN BECAUSE I REALLY DON'T FEEL LIKE ADDING MORE",
 						"Run arbitrary queries through database (sqlite3)",
 						"(autoincrement key int32 Id) (unique string Username) (uint64 DiscordID)"
 					},
@@ -106,14 +109,35 @@ namespace tShockDiscordVerifier.TShockPlugin.Content
 
 		private static void Query(CommandArgs args)
 		{
+            if (args.Parameters.Count < 2)
+            {
+                RelayFault(args.Player, "query");
+                return; //Invalid param count
+            }
 			Shared.AsyncExec.Executor.Run(QueryAsync(args));
 		}
 		private static async Task QueryAsync(CommandArgs args)
 		{
 			try
 			{
-				await Core.DBHandler.DB.StatementAsync(string.Join(' ', args.Parameters));
-			}
+                if (!bool.TryParse(args.Parameters[0], out bool isQuery))
+                {
+                    args.Player.SendErrorMessage($"Could not parse {args.Parameters[0]} as <True|False>");
+                    return;
+                }
+                string query = string.Join(' ', args.Parameters.ToArray()[1..]);
+                if (!isQuery)
+                {
+                    int linesAffected = Core.DBHandler.ExecuteCommand(query);
+                    args.Player.SendInfoMessage($"Affected {linesAffected} entries");
+                }
+                else
+                {
+                    object? result = Core.DBHandler.ExecuteQuery(query);
+                    args.Player.SendInfoMessage(
+                        @$"[QUERY OUTPUT]: {result?.ToString()}");
+                }
+            }
 			catch (Exception x)
 			{
 				args.Player.SendErrorMessage(x.ToString());

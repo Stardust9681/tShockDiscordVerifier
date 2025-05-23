@@ -10,7 +10,6 @@ using TerrariaApi.Server;
 
 using Terraria;
 
-using static SqlKata.Execution.QueryExtensions;
 using Discord;
 
 namespace tShockDiscordVerifier.TShockPlugin
@@ -100,7 +99,7 @@ namespace tShockDiscordVerifier.TShockPlugin
 			return true;
 		}
 
-		private const bool DEBUG = false;
+		private const bool DEBUG = true;
 		private static bool FailWithLog(string message) => ReturnWithLog(false, message);
 		public static T ReturnWithLog<T>(T result, string? message = null)
 		{
@@ -117,11 +116,16 @@ namespace tShockDiscordVerifier.TShockPlugin
 		private void CheckVerificationStatus(PlayerPostLoginEventArgs args)
 		{
 			Shared.AsyncExec.Executor.Run(Task.Run(async () => {
-				IEnumerable<dynamic>? discIDs = Shared.Core.DBHandler.DB.Query("Accounts")
-					.Select("DiscordID")
-					.From("Accounts")
-					.Where("Username", args.Player.Account.Name)
-					.Get();
+                //IEnumerable<dynamic>? discIDs = Shared.Core.DBHandler.DB.Query("Accounts")
+                //.Select("DiscordID")
+                //.From("Accounts")
+                //.Where("Username", args.Player.Account.Name)
+                //.Get();
+                IEnumerable<ulong>? discIDs = Shared.Core.DBHandler.ExecuteVector<ulong>(
+                    @$"SELECT {Shared.Resources.ColDiscordID} FROM Accounts WHERE {Shared.Resources.ColUsername} IS ({args.Player.Account!.Name});",
+                    Shared.Resources.ColDiscordID);
+                //IEnumerable<dynamic>? discIDs = Shared.Core.DBHandler.ExecuteQuery<IEnumerable<dynamic>?>(
+                    //@$"SELECT DiscordID FROM Accounts WHERE Username IS ({args.Player.Account.Name});");
 				if (discIDs is null || !discIDs.Any())
 				{
 					if (TryRevokeVerification(args.Player))
@@ -132,7 +136,7 @@ namespace tShockDiscordVerifier.TShockPlugin
 					return;
 				}
 
-				ulong discID = (ulong)discIDs!.First().DiscordID;
+				ulong discID = discIDs!.First();
 
 				Discord.WebSocket.SocketGuild? guild = Shared.Core.Client.GetPrimaryGuild();
 				if (guild is null) return;
@@ -161,7 +165,7 @@ namespace tShockDiscordVerifier.TShockPlugin
 		}
 		///<summary>Handles banning of accounts whose associated Discord ID has been banned</summary>
 		private static void CheckBans(ConnectEventArgs args)
-		{
+		{            
 			if (args.Handled)
 				return;
 
@@ -170,12 +174,15 @@ namespace tShockDiscordVerifier.TShockPlugin
 			if (player.Account is null)
 				return;
 
-			IEnumerable<dynamic>? discIDs = Shared.Core.DBHandler.DB.Query("Accounts")
-				.Select("DiscordID")
-				.From("Accounts")
-				.Where("Username", player.Account.Name)
-				.Get();
-			if (discIDs is null || !discIDs.Any()) return;
+            //IEnumerable<dynamic>? discIDs = Shared.Core.DBHandler.DB.Query("Accounts")
+            //.Select("DiscordID")
+            //.From("Accounts")
+            //.Where("Username", player.Account.Name)
+            //.Get();
+            IEnumerable<ulong>? discIDs = Shared.Core.DBHandler.ExecuteVector<ulong>(
+                    @$"SELECT {Shared.Resources.ColDiscordID} FROM Accounts WHERE {Shared.Resources.ColUsername} IS ({player.Account!.Name});",
+                    Shared.Resources.ColDiscordID);
+            if (discIDs is null || !discIDs.Any()) return;
 			ulong discID = discIDs.First();
 
 			Ban? ban = TShock.Bans.RetrieveBansByIdentifier(DiscordIdentifier.Prefix)?.FirstOrDefault(x => x.Identifier.EndsWith($"{discID}"));
@@ -191,24 +198,32 @@ namespace tShockDiscordVerifier.TShockPlugin
 			if (!Shared.Core.PluginConfig.DiscordIDBan) return;
 			if (args.Ban.Identifier.StartsWith(DiscordIdentifier.Prefix)) return; //Prevent infinite recursion
 
-			//I try to avoid var, I really do, but I think I've truly found a limit to how much I'm willing to tolerate
-			//Typing the same thing over and over and over and over and over again.
-			var discIDs = Shared.Core.DBHandler.DB.Query("Accounts")
-				.Select("DiscordID")
-				.Where("Username", args.Player.Account.Name)
-				.Get();
-			if (!discIDs.Any()) return;
+            //var discIDs = Shared.Core.DBHandler.DB.Query("Accounts")
+            //.Select("DiscordID")
+            //.Where("Username", args.Player.Account.Name)
+            //.Get();
+            IEnumerable<ulong>? discIDs = Shared.Core.DBHandler.ExecuteVector<ulong>(
+                    @$"SELECT {Shared.Resources.ColDiscordID} FROM Accounts WHERE {Shared.Resources.ColUsername} IS ({args.Player.Account!.Name});",
+                    Shared.Resources.ColDiscordID);
+            if (!discIDs.Any()) return;
 			ulong discID = discIDs.First();
 
 			//Prevent repeat entries
 			if (!TShock.Bans.Bans.Any(x => x.Value.Identifier.StartsWith(DiscordIdentifier.Prefix)))
 				TShock.Bans.InsertBan(GetDiscordBanIdentifier(discID), args.Ban.Reason, args.Ban.BanningUser, args.Ban.BanDateTime, args.Ban.ExpirationDateTime);
 
-			var accounts = Shared.Core.DBHandler.DB.Query("Accounts")
-				.Select("Username")
-				.Where("DiscordID", discID)
-				.Get();
-			if (!accounts.Any()) return;
+			//var accounts = Shared.Core.DBHandler.DB.Query("Accounts")
+			//.Select("Username")
+			//.Where("DiscordID", discID)
+			//.Get();
+            //IEnumerable<dynamic>? accounts = Shared.Core.DBHandler.ExecuteQuery<IEnumerable<dynamic>?>(
+                //@$"SELECT Username FROM Accounts WHERE DiscordID IS ({discID})");
+
+            IEnumerable<string>? accounts = Shared.Core.DBHandler.ExecuteVector<string>(
+                @$"SELECT {Shared.Resources.ColUsername} FROM Accounts WHERE {Shared.Resources.ColDiscordID} IS ({discID})",
+                Shared.Resources.ColUsername);
+
+            if (accounts?.Any() != true) return;
 
 			foreach (string acct in accounts)
 			{
@@ -235,20 +250,23 @@ namespace tShockDiscordVerifier.TShockPlugin
 		}
 		/// <summary>If configured to ban from Discord upon tShock ban, this will ban the associated user(s) (if any exist) upon doing so</summary>
 		private static void TShockBanOnDiscord(object? sender, BanEventArgs args)
-		{
+        {
 			if (!Shared.Core.PluginConfig.ShouldDiscordBan) return;
 
 			Shared.AsyncExec.Executor.Run(Task.Run(async () => {
 				IGuild? activeGuild = Shared.Core.Client.GetPrimaryGuild();
 				if (activeGuild is null) return;
 
-				//I try to avoid var, I really do, but I think I've truly found a limit to how much I'm willing to tolerate
-				//Typing the same thing over and over and over and over and over again.
-				var discIDs = Shared.Core.DBHandler.DB.Query("Accounts")
-					.Select("DiscordID")
-					.Where("Username", args.Player.Account.Name)
-					.Get();
-				if (!discIDs.Any())
+                //I try to avoid var, I really do, but I think I've truly found a limit to how much I'm willing to tolerate
+                //Typing the same thing over and over and over and over and over again.
+                //var discIDs = Shared.Core.DBHandler.DB.Query("Accounts")
+                //.Select("DiscordID")
+                //.Where("Username", args.Player.Account.Name)
+                //.Get();
+                IEnumerable<ulong>? discIDs = Shared.Core.DBHandler.ExecuteVector<ulong>(
+                    @$"SELECT {Shared.Resources.ColDiscordID} FROM Accounts WHERE {Shared.Resources.ColUsername} IS ({args.Player.Account!.Name});",
+                    Shared.Resources.ColDiscordID);
+                if (discIDs?.Any() != true)
 					return;
 				ulong discID = discIDs.First();
 

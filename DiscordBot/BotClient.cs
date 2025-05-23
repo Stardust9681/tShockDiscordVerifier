@@ -7,8 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using static SqlKata.Execution.QueryExtensions;
-
 namespace tShockDiscordVerifier.DiscordBot
 {
 	class BotClient : IDisposable
@@ -65,11 +63,10 @@ namespace tShockDiscordVerifier.DiscordBot
 
 					if (Shared.Verification.Verifier.Verify(auth, out string username))
 					{
-						if (Shared.Core.QueryBuilder
-							.Query("Accounts")
-							.Select(Shared.Resources.ColUsername)
-							.Get()
-							?.Any(x => x.Username is string name && name.Equals(username)) == true)
+                        IEnumerable<string?>? usernames = Shared.Core.DBHandler.ExecuteVector<string>(
+                            @$"SELECT {Shared.Resources.ColUsername} from Accounts",
+                            Shared.Resources.ColUsername);
+						if (usernames?.Any(x => x is string name && name.Equals(username)) == true)
 						{
 							await arg.RespondAsync("### Your authentication failed!\nYou are already verified.");
 							return;
@@ -77,17 +74,24 @@ namespace tShockDiscordVerifier.DiscordBot
 
 						await arg.RespondAsync("### Success!\nYou'll receive a message ingame upon being verified (you may have to relog)");
 
-						Shared.Core.QueryBuilder
-							.Query("Accounts")
-							.Insert(new KeyValuePair<string, object>[] { new("Username", username), new("DiscordID", arg.User.Id) });
-						
-						if (Shared.Core.PluginHandler.TryVerify(username))
-						{
-							TShockAPI.TShock.Players.FirstOrDefault(x => x.Account.Name.Equals(username))
-								?.SendSuccessMessage("You were successfully verified!");
-						}
+                        //Shared.Core.QueryBuilder
+                        //.Query("Accounts")
+                        //.Insert(new KeyValuePair<string, object>[] { new("Username", username), new("DiscordID", arg.User.Id) });
+                        Shared.Core.DBHandler.ExecuteCommand(
+                            @$"INSERT OR IGNORE INTO Accounts (Username, DiscordID) VALUES ('{username}', {arg.User.Id});");
 
-						return;
+                        if (Shared.Core.PluginHandler.TryVerify(username))
+                        {
+                            TShockAPI.TShock.Players.FirstOrDefault(x => x.Account.Name.Equals(username))
+                                ?.SendSuccessMessage("You were successfully verified!");
+                        }
+                        else
+                        {
+                            TShockAPI.TShock.Players.FirstOrDefault(x => x.Account.Name.Equals(username))
+                                ?.SendSuccessMessage("You are verified.. but we couldn't move you to verified group!");
+                        }
+
+                            return;
 					}
 					await arg.RespondAsync("### Your authentication failed!\nEnsure the code matches EXACTLY (caps matter)");
 				}
@@ -138,6 +142,8 @@ namespace tShockDiscordVerifier.DiscordBot
 
 			if (Shared.Core.BotConfig.ShouldTShockBan)
 			{
+                /*
+
 				//Names of all the accounts using the same Discord ID
 				IEnumerable<dynamic> names = Shared.Core.DBHandler.DB.Query("Accounts")
 					.Select("Username")
@@ -156,7 +162,29 @@ namespace tShockDiscordVerifier.DiscordBot
 					TShockAPI.TShock.Bans.InsertBan(TShockPlugin.TShockManager.GetDiscordBanIdentifier(args1.Id), "Banned from Discord", banner, DateTime.UtcNow, DateTime.MaxValue);
 					TShockAPI.TShock.Log.ConsoleInfo($"Banned {accountName} with Identifier:{TShockPlugin.TShockManager.GetDiscordBanIdentifier(args1.Id)} permanently");
 				}
-			}
+
+                */
+
+                if (!Shared.Core.DBHandler.TryGetUsersFromID(args1.Id, out var names))
+                    return;
+
+                //IEnumerable<dynamic>? names = Shared.Core.DBHandler.ExecuteQuery<IEnumerable<dynamic>?>(
+                //@$"SELECT Username FROM Accounts WHERE DiscordID IS ({args1.Id});");
+
+                //string? banner = Shared.Core.DBHandler.ExecuteQuery<string?>(
+                //@$"SELECT Username FROM Accounts WHERE DiscordID IS ({entry.User.Id});");
+                string? banner = Shared.Core.DBHandler.ExecuteScalar<string>(
+                    @$"SELECT {Shared.Resources.ColUsername} FROM Accounts WHERE {Shared.Resources.ColDiscordID} IS ({entry.User.Id})",
+                    Shared.Resources.ColUsername);
+
+                if (names is null || banner is null)
+                    return;
+                foreach (string accountName in names)
+                {
+                    TShockAPI.TShock.Bans.InsertBan(TShockPlugin.TShockManager.GetDiscordBanIdentifier(args1.Id), "Banned from Discord", banner, DateTime.UtcNow, DateTime.MaxValue);
+                    TShockAPI.TShock.Log.ConsoleInfo($"Banned {accountName} with Identifier:{TShockPlugin.TShockManager.GetDiscordBanIdentifier(args1.Id)} permanently");
+                }
+            }
 		}
 
 		public void ValidateUser(IUser user, out bool failed, out bool wasSetupFail)

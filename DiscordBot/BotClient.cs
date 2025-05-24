@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using tShockDiscordVerifier.Shared;
 
 namespace tShockDiscordVerifier.DiscordBot
 {
@@ -64,7 +65,7 @@ namespace tShockDiscordVerifier.DiscordBot
 					if (Shared.Verification.Verifier.Verify(auth, out string username))
 					{
                         IEnumerable<string?>? usernames = Shared.Core.DBHandler.ExecuteVector<string>(
-                            @$"SELECT {Shared.Resources.ColUsername} from Accounts",
+                            @$"SELECT {Resources.ColUsername} from {Resources.TableAccounts}",
                             Shared.Resources.ColUsername);
 						if (usernames?.Any(x => x is string name && name.Equals(username)) == true)
 						{
@@ -78,7 +79,7 @@ namespace tShockDiscordVerifier.DiscordBot
                         //.Query("Accounts")
                         //.Insert(new KeyValuePair<string, object>[] { new("Username", username), new("DiscordID", arg.User.Id) });
                         Shared.Core.DBHandler.ExecuteCommand(
-                            @$"INSERT OR IGNORE INTO Accounts (Username, DiscordID) VALUES ('{username}', {arg.User.Id});");
+                            @$"INSERT OR IGNORE INTO {Resources.TableAccounts} ({Resources.ColUsername}, {Resources.ColDiscordID}) VALUES ('{username}', {arg.User.Id});");
 
                         if (Shared.Core.PluginHandler.TryVerify(username))
                         {

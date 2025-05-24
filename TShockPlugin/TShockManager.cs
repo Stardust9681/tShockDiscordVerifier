@@ -11,6 +11,7 @@ using TerrariaApi.Server;
 using Terraria;
 
 using Discord;
+using tShockDiscordVerifier.Shared;
 
 namespace tShockDiscordVerifier.TShockPlugin
 {
@@ -264,7 +265,7 @@ namespace tShockDiscordVerifier.TShockPlugin
                 //.Where("Username", args.Player.Account.Name)
                 //.Get();
                 IEnumerable<ulong>? discIDs = Shared.Core.DBHandler.ExecuteVector<ulong>(
-                    @$"SELECT {Shared.Resources.ColDiscordID} FROM Accounts WHERE {Shared.Resources.ColUsername} IS ({args.Player.Account!.Name});",
+                    @$"SELECT {Shared.Resources.ColDiscordID} FROM {Resources.TableAccounts} WHERE {Shared.Resources.ColUsername} IS ({args.Player.Account!.Name});",
                     Shared.Resources.ColDiscordID);
                 if (discIDs?.Any() != true)
 					return;

@@ -21,7 +21,7 @@ namespace tShockDiscordVerifier.Shared.Database
             connection.Open();
             ExecuteCommand(
                 @$"
-                CREATE TABLE IF NOT EXISTS Accounts (
+                CREATE TABLE IF NOT EXISTS {Resources.TableAccounts} (
 				{Resources.ColPrimaryKey} INTEGER PRIMARY KEY AUTOINCREMENT,
 				{Resources.ColUsername} TEXT UNIQUE NOT NULL,
 				{Resources.ColDiscordID} UNSIGNED BIG INT DEFAULT 0
@@ -29,17 +29,17 @@ namespace tShockDiscordVerifier.Shared.Database
             );
 		}
 
-		public bool TryGetUsersFromID(ulong discID, out IEnumerable<string?>? accountNames)
+		public bool TryGetUsersFromID(ulong discID, out IEnumerable<string>? accountNames)
 		{
             accountNames = ExecuteVector<string>(
-                $@"SELECT {Resources.ColUsername} FROM Accounts WHERE {Resources.ColDiscordID} IS ({discID});",
+                $@"SELECT {Resources.ColUsername} FROM {Resources.TableAccounts} WHERE {Resources.ColDiscordID} IS ({discID});",
                 Resources.ColUsername);
             return accountNames is not null && accountNames?.Count() > 0;
 		}
 		public bool TryGetIDFromUsername(string username, out ulong? discordID)
 		{
             discordID = ExecuteScalar<ulong?>(
-                $@"SELECT {Resources.ColDiscordID} FROM Accounts WHERE {Resources.ColUsername} IS ({username});",
+                $@"SELECT {Resources.ColDiscordID} FROM {Resources.TableAccounts} WHERE {Resources.ColUsername} IS ({username});",
                 Resources.ColDiscordID
                 );
             return discordID is not null;

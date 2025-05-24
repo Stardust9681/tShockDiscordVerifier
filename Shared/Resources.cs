@@ -25,6 +25,7 @@ namespace tShockDiscordVerifier.Shared
 		public const string ColDiscordID = "DiscordID";
 		public const string ColPrimaryKey = "Id";
 		public const string DatabaseLocation = "auth_entries.sqlite3";
+        public const string TableAccounts = "Accounts";
 		#endregion
 	}
 }

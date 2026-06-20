@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <LangVersion>latest</LangVersion>
     <Configurations>TShock</Configurations>
@@ -14,7 +14,7 @@
     <PackageReference Include="Discord.Net.Rest" Version="3.17.4" />
     <PackageReference Include="Discord.Net.WebSocket" Version="3.17.4" />
     -->
-    <PackageReference Include="TShock" Version="5.2.4" />
+    <PackageReference Include="TShock" Version="6.1.0" />
   </ItemGroup>
 
   <ItemGroup>
